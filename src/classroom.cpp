@@ -94,17 +94,37 @@ void Classroom::generateCeiling()
 {
     ceilingVertices.clear();
     
-    // Create ceiling as a large quad
-    glm::vec3 v1(-ROOM_WIDTH/2, ROOM_HEIGHT, ROOM_LENGTH/2);
-    glm::vec3 v2(ROOM_WIDTH/2, ROOM_HEIGHT, ROOM_LENGTH/2);
-    glm::vec3 v3(ROOM_WIDTH/2, ROOM_HEIGHT, -ROOM_LENGTH/2);
-    glm::vec3 v4(-ROOM_WIDTH/2, ROOM_HEIGHT, -ROOM_LENGTH/2);
+    // Create ceiling with square tiles
+    float tileSize = 0.5f;  // Size of each square tile (60cm x 60cm)
+    float gap = 0.01f;      // Small gap between tiles for visible grid lines
+    
+    int numTilesX = (int)(ROOM_WIDTH / tileSize);
+    int numTilesZ = (int)(ROOM_LENGTH / tileSize);
+    
+    float startX = -ROOM_WIDTH / 2.0f;
+    float startZ = -ROOM_LENGTH / 2.0f;
     
     glm::vec3 normal(0.0f, -1.0f, 0.0f);
     
-    addQuad(ceilingVertices, v1, v2, v3, v4, normal,
-           glm::vec2(0.0f, 0.0f), glm::vec2(4.0f, 0.0f), 
-           glm::vec2(4.0f, 3.0f), glm::vec2(0.0f, 3.0f));
+    for (int i = 0; i < numTilesX; i++)
+    {
+        for (int j = 0; j < numTilesZ; j++)
+        {
+            float x1 = startX + i * tileSize + gap;
+            float x2 = startX + (i + 1) * tileSize - gap;
+            float z1 = startZ + j * tileSize + gap;
+            float z2 = startZ + (j + 1) * tileSize - gap;
+            
+            glm::vec3 v1(x1, ROOM_HEIGHT, z1);
+            glm::vec3 v2(x2, ROOM_HEIGHT, z1);
+            glm::vec3 v3(x2, ROOM_HEIGHT, z2);
+            glm::vec3 v4(x1, ROOM_HEIGHT, z2);
+            
+            addQuad(ceilingVertices, v1, v2, v3, v4, normal,
+                   glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 0.0f), 
+                   glm::vec2(1.0f, 1.0f), glm::vec2(0.0f, 1.0f));
+        }
+    }
 }
 
 void Classroom::generateWalls()
