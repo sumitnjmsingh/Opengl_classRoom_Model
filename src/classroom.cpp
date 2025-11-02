@@ -22,8 +22,6 @@ Classroom::~Classroom()
     glDeleteBuffers(1, &windowsVBO);
     glDeleteVertexArrays(1, &benchesVAO);
     glDeleteBuffers(1, &benchesVBO);
-    glDeleteVertexArrays(1, &tablesVAO);
-    glDeleteBuffers(1, &tablesVBO);
     glDeleteVertexArrays(1, &podiumVAO);
     glDeleteBuffers(1, &podiumVBO);
     glDeleteVertexArrays(1, &boardVAO);
@@ -41,7 +39,6 @@ void Classroom::initializeGeometry()
     generateDoors();
     generateWindows();
     generateBenches();
-    generateTables();
     generatePodium();
     generateGreenBoard();
     generateLights();
@@ -53,7 +50,6 @@ void Classroom::initializeGeometry()
     setupBuffers(doorsVAO, doorsVBO, doorVertices);
     setupBuffers(windowsVAO, windowsVBO, windowVertices);
     setupBuffers(benchesVAO, benchesVBO, benchVertices);
-    setupBuffers(tablesVAO, tablesVBO, tableVertices);
     setupBuffers(podiumVAO, podiumVBO, podiumVertices);
     setupBuffers(boardVAO, boardVBO, boardVertices);
     setupBuffers(lightsVAO, lightsVBO, lightVertices);
@@ -64,19 +60,17 @@ void Classroom::initializeGeometry()
         std::cout << "Warning: Failed to load fan model. Please place fan_up.obj in models/ directory" << std::endl;
     }
     
-    // Disabled bench/table OBJ loading for better performance
-    // Use procedural geometry instead (faster rendering)
-    /*
+    if (!podiumModel.loadOBJ("models/podium.obj"))
+    {
+        std::cout << "Warning: Failed to load podium model. Please place podium.obj in models/ directory" << std::endl;
+    }
+    
     if (!benchModel.loadOBJ("models/classroom_desk.obj"))
     {
         std::cout << "Warning: Failed to load bench model. Please place bench.obj in models/ directory" << std::endl;
     }
-    
-    if (!tableModel.loadOBJ("models/table.obj"))
-    {
-        std::cout << "Warning: Failed to load table model. Please place table.obj in models/ directory" << std::endl;
-    }
-    */
+
+
 }
 
 void Classroom::generateFloor()
@@ -262,44 +256,7 @@ void Classroom::generateBenches()
     }
 }
 
-void Classroom::generateTables()
-{
-    tableVertices.clear();
-    
-    // Tables positioned in front of benches
-    float tableWidth = 1.8f;
-    float tableDepth = 0.6f;
-    float tableHeight = 0.75f;
-    float tableTopThickness = 0.08f; // Make table top thicker for visibility
-    
-    for(int row = 0; row < 4; row++)
-    {
-        for(int col = 0; col < 3; col++)
-        {
-            float x = -3.0f + col * 2.2f;
-            float z = -0.5f + row * 1.2f - 0.6f; // In front of benches (shifted forward with benches)
-            
-            // Table top
-            addCube(tableVertices, 
-                   glm::vec3(x, tableHeight - tableTopThickness/2, z), 
-                   glm::vec3(tableWidth, tableTopThickness, tableDepth));
-            
-            // Table legs
-            float legWidth = 0.08f; // Make legs thicker for visibility
-            float legHeight = tableHeight - tableTopThickness;
-            
-            for(int leg = 0; leg < 4; leg++)
-            {
-                float legX = x + (leg % 2 == 0 ? -tableWidth/2 + legWidth/2 : tableWidth/2 - legWidth/2);
-                float legZ = z + (leg < 2 ? -tableDepth/2 + legWidth/2 : tableDepth/2 - legWidth/2);
-                
-                addCube(tableVertices, 
-                       glm::vec3(legX, legHeight/2, legZ), 
-                       glm::vec3(legWidth, legHeight, legWidth));
-            }
-        }
-    }
-}
+
 
 void Classroom::generatePodium()
 {
@@ -323,14 +280,21 @@ void Classroom::generateGreenBoard()
 {
     boardVertices.clear();
     
-    // Green board on the back wall - larger and more prominent
-    float boardWidth = 5.0f;  // Wider board
-    float boardHeight = 1.5f; // Taller board
-    float boardY = 1.8f;      // Slightly lower for better visibility
-    float boardThickness = 0.08f; // Thicker for better visibility
+    // Two green boards on the front wall - side by side
+    float boardWidth = 4.3f;  // Width of each board
+    float boardHeight = 1.5f; // Height of boards
+    float boardY = 1.8f;      // Vertical position
+    float boardThickness = 0.08f; // Thickness
+    float spacing = 0.2f;     // Space between the two boards
     
+    // Left board
     addCube(boardVertices, 
-           glm::vec3(0.0f, boardY, -ROOM_LENGTH/2 + boardThickness/2), 
+           glm::vec3(-boardWidth/2 - spacing/2, boardY, -ROOM_LENGTH/2 + boardThickness/2), 
+           glm::vec3(boardWidth, boardHeight, boardThickness));
+    
+    // Right board
+    addCube(boardVertices, 
+           glm::vec3(boardWidth/2 + spacing/2, boardY, -ROOM_LENGTH/2 + boardThickness/2), 
            glm::vec3(boardWidth, boardHeight, boardThickness));
 }
 
@@ -493,15 +457,19 @@ void Classroom::render(Shader& shader)
 {
     // Render floor (gray tiles)
     renderBuffer(floorVAO, floorVertices.size() / 8, 
-                glm::vec3(0.4f, 0.4f, 0.4f), 
-                glm::vec3(0.6f, 0.6f, 0.6f), 
-                glm::vec3(0.2f, 0.2f, 0.2f), shader);
+    glm::vec3(0.8f, 0.8f, 0.8f),   // Ambient - soft white
+    glm::vec3(0.95f, 0.95f, 0.95f), // Diffuse - bright white
+    glm::vec3(0.6f, 0.6f, 0.6f),   // Specular - adds slight shine
+    shader);
+
     
     // Render ceiling (white)
     renderBuffer(ceilingVAO, ceilingVertices.size() / 8, 
-                glm::vec3(0.8f, 0.8f, 0.8f), 
-                glm::vec3(0.9f, 0.9f, 0.9f), 
-                glm::vec3(0.1f, 0.1f, 0.1f), shader);
+    glm::vec3(0.9f, 0.9f, 0.9f),   // Ambient - almost pure white
+    glm::vec3(1.0f, 1.0f, 1.0f),   // Diffuse - perfect white under light
+    glm::vec3(0.3f, 0.3f, 0.3f),   // Specular - slight shine to reflect light naturally
+    shader);
+
     
     // Render walls (light beige)
     renderBuffer(wallsVAO, wallVertices.size() / 8, 
@@ -510,42 +478,49 @@ void Classroom::render(Shader& shader)
                 glm::vec3(0.1f, 0.1f, 0.1f), shader);
     
 
-       // Render door on right wall (realistic brown wood)
+       // Render door on right wall (blackish brown wood)
        renderBuffer(doorsVAO, doorVertices.size() / 8, 
-       glm::vec3(0.25f, 0.13f, 0.05f),   // ambient - darker base tone
-       glm::vec3(0.55f, 0.27f, 0.07f),   // diffuse - natural brown
-       glm::vec3(0.2f, 0.15f, 0.1f),     // specular - soft reflection
+       glm::vec3(0.08f, 0.05f, 0.02f),   // ambient - very dark blackish brown
+       glm::vec3(0.18f, 0.12f, 0.05f),   // diffuse - dark blackish brown
+       glm::vec3(0.1f, 0.08f, 0.04f),    // specular - minimal reflection
        shader);
     
     // No windows or podium in this classroom design
 
-       // Render benches (realistic polished wood)
-       renderBuffer(benchesVAO, benchVertices.size() / 8,
-       glm::vec3(0.35f, 0.20f, 0.07f),   // ambient - darker base
-       glm::vec3(0.65f, 0.40f, 0.15f),   // diffuse - rich teak color
-       glm::vec3(0.25f, 0.18f, 0.10f),   // specular - slight shine
-       shader);
-
-       // Render tables (realistic dark wood)
-       renderBuffer(tablesVAO, tableVertices.size() / 8,
-       glm::vec3(0.20f, 0.10f, 0.05f),   // ambient - dark base
-       glm::vec3(0.45f, 0.25f, 0.10f),   // diffuse - deep brown
-       glm::vec3(0.15f, 0.10f, 0.05f),   // specular - subtle shine
-       shader);
+       // Render benches from OBJ model if available, otherwise use procedural geometry
+       if (!benchModel.vertices.empty())
+       {
+           renderBenches(shader);
+       }
+       else
+       {
+           renderBuffer(benchesVAO, benchVertices.size() / 8,
+           glm::vec3(0.35f, 0.20f, 0.07f),   // ambient - darker base
+           glm::vec3(0.65f, 0.40f, 0.15f),   // diffuse - rich teak color
+           glm::vec3(0.25f, 0.18f, 0.10f),   // specular - slight shine
+           shader);
+       }
 
 
     
-    // Render podium (dark wood beside green board)
-    renderBuffer(podiumVAO, podiumVertices.size() / 8, 
-                glm::vec3(0.2f, 0.15f, 0.1f), 
-                glm::vec3(0.4f, 0.3f, 0.2f), 
-                glm::vec3(0.15f, 0.1f, 0.08f), shader);
+    // Render podium from OBJ model if available, otherwise use procedural geometry
+    if (!podiumModel.vertices.empty())
+    {
+        renderPodium(shader);
+    }
+    else
+    {
+        renderBuffer(podiumVAO, podiumVertices.size() / 8, 
+                    glm::vec3(0.2f, 0.15f, 0.1f), 
+                    glm::vec3(0.4f, 0.3f, 0.2f), 
+                    glm::vec3(0.15f, 0.1f, 0.08f), shader);
+    }
     
-    // Render green board (main focal point of classroom)
+    // Render green boards (blackish-green color)
     renderBuffer(boardVAO, boardVertices.size() / 8,
-    glm::vec3(0.0f, 0.2f, 0.0f),   // ambient - very dark
-    glm::vec3(0.0f, 0.4f, 0.0f),   // diffuse - dark green
-    glm::vec3(0.05f, 0.1f, 0.05f), // specular - subtle highlights
+    glm::vec3(0.02f, 0.08f, 0.02f),   // ambient - very dark blackish-green
+    glm::vec3(0.05f, 0.15f, 0.05f),   // diffuse - dark blackish-green
+    glm::vec3(0.03f, 0.08f, 0.03f),   // specular - minimal highlights
     shader);
 }
 
@@ -595,5 +570,74 @@ void Classroom::renderFan(Shader& shader)
     
     // Reset model matrix
     model = glm::mat4(1.0f);
+    shader.setMat4("model", model);
+}
+
+void Classroom::renderPodium(Shader& shader)
+{
+    if (podiumModel.vertices.empty())
+        return;  // Podium model not loaded
+    
+    // Set podium material properties (dark wood)
+    shader.setVec3("material.ambient", glm::vec3(0.2f, 0.15f, 0.1f));
+    shader.setVec3("material.diffuse", glm::vec3(0.4f, 0.3f, 0.2f));
+    shader.setVec3("material.specular", glm::vec3(0.15f, 0.1f, 0.08f));
+    shader.setFloat("material.shininess", 32.0f);
+    
+    // Position podium on the right side of the green board - on the floor
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(3.2f, 0.0f, -ROOM_LENGTH/2 + 1.2f));
+    model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));  // Rotate 180° to face front
+    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));  // Adjust scale as needed
+    
+    shader.setMat4("model", model);
+    
+    // Render the podium
+    podiumModel.render();
+    
+    // Reset model matrix
+    model = glm::mat4(1.0f);
+    shader.setMat4("model", model);
+}
+
+void Classroom::renderBenches(Shader& shader)
+{
+    if (benchModel.vertices.empty())
+        return;  // Bench model not loaded
+    
+    // Set bench material properties (wood)
+    shader.setVec3("material.ambient", glm::vec3(0.3f, 0.2f, 0.1f));
+    shader.setVec3("material.diffuse", glm::vec3(0.6f, 0.4f, 0.2f));
+    shader.setVec3("material.specular", glm::vec3(0.2f, 0.15f, 0.1f));
+    shader.setFloat("material.shininess", 32.0f);
+    
+    // Render benches in 4 rows with 4 benches each
+    int numRows = 4;
+    int benchesPerRow = 4;
+    float startZ = -ROOM_LENGTH/2 + 2.5f;  // Start from front, leave space near board
+    float rowSpacing = 1.5f;  // Space between rows
+    float benchSpacing = 2.8f;  // Space between benches in a row (adjusted for 4 columns)
+    
+    for (int row = 0; row < numRows; row++)
+    {
+        for (int col = 0; col < benchesPerRow; col++)
+        {
+            glm::mat4 model = glm::mat4(1.0f);
+            
+            // Position: center benches horizontally, space vertically
+            float xPos = -4.5f + col * benchSpacing;
+            float zPos = startZ + row * rowSpacing;
+            
+            model = glm::translate(model, glm::vec3(xPos, 0.0f, zPos));
+            model = glm::rotate(model, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));  // Face front
+            model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));  // Reduced scale to fit classroom
+            
+            shader.setMat4("model", model);
+            benchModel.render();
+        }
+    }
+    
+    // Reset model matrix
+    glm::mat4 model = glm::mat4(1.0f);
     shader.setMat4("model", model);
 }

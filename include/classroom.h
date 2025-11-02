@@ -24,13 +24,14 @@ public:
     unsigned int doorsVAO, doorsVBO;
     unsigned int windowsVAO, windowsVBO;
     unsigned int benchesVAO, benchesVBO;
-    unsigned int tablesVAO, tablesVBO;
     unsigned int podiumVAO, podiumVBO;
     unsigned int boardVAO, boardVBO;
     unsigned int lightsVAO, lightsVBO;
 
-    // Fan model
+    // OBJ models
     Model fanModel;
+    Model podiumModel;
+    Model benchModel;
     float fanRotation;
 
     // Vertex data containers
@@ -40,7 +41,6 @@ public:
     std::vector<float> doorVertices;
     std::vector<float> windowVertices;
     std::vector<float> benchVertices;
-    std::vector<float> tableVertices;
     std::vector<float> podiumVertices;
     std::vector<float> boardVertices;
     std::vector<float> lightVertices;
@@ -53,6 +53,8 @@ public:
     void renderLights(Shader& lightShader);
     void updateFan(float deltaTime);
     void renderFan(Shader& shader);
+    void renderPodium(Shader& shader);
+    void renderBenches(Shader& shader);
 
 private:
     void generateFloor();
@@ -61,7 +63,6 @@ private:
     void generateDoors();
     void generateWindows();
     void generateBenches();
-    void generateTables();
     void generatePodium();
     void generateGreenBoard();
     void generateLights();
