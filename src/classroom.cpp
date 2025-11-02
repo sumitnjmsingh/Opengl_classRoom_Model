@@ -305,7 +305,7 @@ void Classroom::generateGreenBoard()
     float boardHeight = 1.5f; // Height of boards
     float boardY = 1.8f;      // Vertical position
     float boardThickness = 0.08f; // Thickness
-    float spacing = 0.2f;     // Space between the two boards
+    float spacing = 0.04f;     // Space between the two boards
     
     // Left board
     addCube(boardVertices, 
