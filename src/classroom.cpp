@@ -953,102 +953,14 @@ void Classroom::generateWindows()
 
 void Classroom::generateBenches()
 {
-    benchVertices.clear();
-    
-    // Realistic classroom bench dimensions
-    float benchWidth = 1.8f;
-    float benchDepth = 0.45f;     // Slightly deeper for comfort
-    float seatHeight = 0.45f;     // Standard sitting height
-    float seatThickness = 0.05f;  // Realistic seat thickness
-    float backrestHeight = 0.35f; // Backrest height above seat
-    float backrestThickness = 0.04f;
-    float legWidth = 0.06f;
-    float legDepth = 0.06f;
-    
-    // Support beam dimensions
-    float beamWidth = benchWidth;
-    float beamHeight = 0.08f;
-    float beamDepth = 0.06f;
-    
-    // 4 rows of benches, 3 benches per row - shifted forward from green board
-    for(int row = 0; row < 4; row++)
-    {
-        for(int col = 0; col < 3; col++)
-        {
-            float x = -3.0f + col * 2.2f;
-            float z = -0.5f + row * 1.2f; // Shifted 1.5m forward to create gap from green board
-            
-            // Bench seat (main seating surface)
-            addCube(benchVertices, 
-                   glm::vec3(x, seatHeight, z), 
-                   glm::vec3(benchWidth, seatThickness, benchDepth));
-            
-            // Backrest
-            addCube(benchVertices, 
-                   glm::vec3(x, seatHeight + seatThickness/2 + backrestHeight/2, z + benchDepth/2 - backrestThickness/2), 
-                   glm::vec3(benchWidth, backrestHeight, backrestThickness));
-            
-            // Front legs (2 legs)
-            float frontLegZ = z - benchDepth/2 + legDepth/2;
-            addCube(benchVertices, 
-                   glm::vec3(x - benchWidth/2 + legWidth/2, seatHeight/2, frontLegZ), 
-                   glm::vec3(legWidth, seatHeight, legDepth));
-            addCube(benchVertices, 
-                   glm::vec3(x + benchWidth/2 - legWidth/2, seatHeight/2, frontLegZ), 
-                   glm::vec3(legWidth, seatHeight, legDepth));
-            
-            // Back legs (2 legs) - supporting the backrest
-            float backLegZ = z + benchDepth/2 - legDepth/2;
-            float backLegHeight = seatHeight + backrestHeight;
-            addCube(benchVertices, 
-                   glm::vec3(x - benchWidth/2 + legWidth/2, backLegHeight/2, backLegZ), 
-                   glm::vec3(legWidth, backLegHeight, legDepth));
-            addCube(benchVertices, 
-                   glm::vec3(x + benchWidth/2 - legWidth/2, backLegHeight/2, backLegZ), 
-                   glm::vec3(legWidth, backLegHeight, legDepth));
-            
-            // Horizontal support beams for stability
-            // Front support beam
-            addCube(benchVertices, 
-                   glm::vec3(x, seatHeight * 0.3f, frontLegZ), 
-                   glm::vec3(beamWidth, beamHeight, beamDepth));
-            
-            // Back support beam
-            addCube(benchVertices, 
-                   glm::vec3(x, seatHeight * 0.3f, backLegZ), 
-                   glm::vec3(beamWidth, beamHeight, beamDepth));
-            
-            // Side support beams (connecting front and back)
-            float sideBeamX1 = x - benchWidth/2 + legWidth/2;
-            float sideBeamX2 = x + benchWidth/2 - legWidth/2;
-            addCube(benchVertices, 
-                   glm::vec3(sideBeamX1, seatHeight * 0.3f, z), 
-                   glm::vec3(beamDepth, beamHeight, benchDepth - legDepth));
-            addCube(benchVertices, 
-                   glm::vec3(sideBeamX2, seatHeight * 0.3f, z), 
-                   glm::vec3(beamDepth, beamHeight, benchDepth - legDepth));
-        }
-    }
+
 }
 
 
 
 void Classroom::generatePodium()
 {
-    podiumVertices.clear();
     
-    // Teacher's podium beside the green board on back wall
-    float podiumWidth = 0.8f;  // Decreased width for better proportions
-    float podiumDepth = 0.8f;
-    float podiumHeight = 1.2f; // Increased height for better functionality
-    
-    // Position podium to the right side of the green board - shifted for better accessibility
-    float podiumX = 3.2f; // Slightly closer to center for better positioning relative to benches
-    float podiumZ = -ROOM_LENGTH/2 + podiumDepth/2 + 0.8f; // Further from back wall, closer to teaching area
-    
-    addCube(podiumVertices, 
-           glm::vec3(podiumX, podiumHeight/2, podiumZ), 
-           glm::vec3(podiumWidth, podiumHeight, podiumDepth));
 }
 
 void Classroom::generateGreenBoard()
