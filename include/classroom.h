@@ -30,7 +30,6 @@ public:
     unsigned int boardVAO, boardVBO;
     unsigned int boardBorderVAO, boardBorderVBO;
     unsigned int lightsVAO, lightsVBO;
-    unsigned int clockVAO, clockVBO;
 
     // OBJ models
     Model fanModel;
@@ -38,7 +37,6 @@ public:
     Model benchModel;
     Model projectorModel;
     Model projectorV2Model;  // Hanging projector
-    Model clockModel;
     float fanRotation;
     bool fanRunning[6];  // Track which fans are running (0-5 for 6 fans)
     
@@ -46,6 +44,11 @@ public:
     float screenExtension;  // 0.0 (rolled up) to 1.0 (fully extended)
     bool screenRolling;     // Whether screen is currently rolling
     bool screenExtending;   // True = extending down, False = rolling up
+    
+    // Door state
+    float doorOpenAngle;    // 0.0 (closed) to 90.0 (fully open)
+    bool doorMoving;        // Whether door is currently moving
+    bool doorOpening;       // True = opening, False = closing
 
     // Vertex data containers
     std::vector<float> floorVertices;
@@ -60,13 +63,11 @@ public:
     std::vector<float> boardVertices;
     std::vector<float> boardBorderVertices;
     std::vector<float> lightVertices;
-    std::vector<float> clockVertices;
     
     // Texture IDs
     unsigned int benchTextureID;
     unsigned int ceilingTileTextureID;
     unsigned int podiumTextureID;
-    unsigned int clockTextureID;
 
     Classroom();
     ~Classroom();
@@ -76,14 +77,15 @@ public:
     void renderLights(Shader& lightShader);
     void updateFan(float deltaTime);
     void updateProjectorScreen(float deltaTime);
+    void updateDoor(float deltaTime);
     void renderFan(Shader& shader);
     void renderPodium(Shader& shader);
     void renderBenches(Shader& shader);
     void renderDoor(Shader& shader);
     void renderProjector(Shader& shader);
-    void renderClock(Shader& shader);
     void toggleFan(int fanIndex);  // Toggle fan on/off
     void toggleProjectorScreen();  // Toggle projector screen up/down
+    void toggleDoor();  // Toggle door open/close
 
 private:
     void generateFloor();
@@ -95,7 +97,6 @@ private:
     void generatePodium();
     void generateGreenBoard();
     void generateLights();
-    void generateClock();
 
     void addQuad(std::vector<float>& vertices, 
                 glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, glm::vec3 v4, 

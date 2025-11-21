@@ -19,6 +19,11 @@ Classroom::Classroom()
     screenExtension = 0.0f;    // Start rolled up
     screenRolling = true;
     screenExtending = true;
+    
+    // Initialize door state
+    doorOpenAngle = 0.0f;      // Start closed
+    doorMoving = false;
+    doorOpening = false;
 }
 
 Classroom::~Classroom()
@@ -1383,6 +1388,59 @@ void Classroom::updateProjectorScreen(float deltaTime)
     }
 }
 
+void Classroom::toggleDoor()
+{
+    if (!doorMoving)
+    {
+        doorMoving = true;
+        // Toggle direction based on current state
+        if (doorOpenAngle >= 90.0f)
+        {
+            doorOpening = false;  // Close door
+            std::cout << "Door closing" << std::endl;
+        }
+        else if (doorOpenAngle <= 0.0f)
+        {
+            doorOpening = true;   // Open door
+            std::cout << "Door opening" << std::endl;
+        }
+        else
+        {
+            // If partially open, continue in current direction
+            std::cout << "Door " << (doorOpening ? "opening" : "closing") << std::endl;
+        }
+    }
+}
+
+void Classroom::updateDoor(float deltaTime)
+{
+    if (doorMoving)
+    {
+        float doorSpeed = 30.0f;  // Speed of door opening/closing (degrees per second)
+        
+        if (doorOpening)
+        {
+            doorOpenAngle += doorSpeed * deltaTime;
+            if (doorOpenAngle >= 90.0f)
+            {
+                doorOpenAngle = 90.0f;
+                doorMoving = false;
+                std::cout << "Door fully OPEN" << std::endl;
+            }
+        }
+        else
+        {
+            doorOpenAngle -= doorSpeed * deltaTime;
+            if (doorOpenAngle <= 0.0f)
+            {
+                doorOpenAngle = 0.0f;
+                doorMoving = false;
+                std::cout << "Door fully CLOSED" << std::endl;
+            }
+        }
+    }
+}
+
 void Classroom::renderFan(Shader& shader)
 {
     if (fanModel.vertices.empty())
@@ -1557,7 +1615,6 @@ void Classroom::renderDoor(Shader& shader)
     shader.setFloat("material.shininess", 32.0f);
     
     float doorZ = -ROOM_LENGTH/2 + 1.5f; // Near the front wall (1.5m from front)
-    float doorOpenAngle = 0.0f; // Door is open at 45 degrees
     
     // Position door at the hinge point (left edge of door frame)
     glm::mat4 model = glm::mat4(1.0f);

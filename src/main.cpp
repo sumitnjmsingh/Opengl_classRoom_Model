@@ -34,6 +34,7 @@ Classroom* g_classroom = nullptr;
 bool keyPressed[6] = {false, false, false, false, false, false};
 bool screenKeyPressed = false;  // For projector screen toggle (P key)
 bool maximizeKeyPressed = false;  // For window maximize toggle (M key)
+bool doorKeyPressed = false;  // For door toggle (O key)
 
 // Function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -160,6 +161,9 @@ int main()
         
         // Update projector screen animation
         classroom.updateProjectorScreen(deltaTime);
+        
+        // Update door animation
+        classroom.updateDoor(deltaTime);
 
         // render light sources
         lightCubeShader.use();
@@ -264,6 +268,16 @@ void processInput(GLFWwindow *window)
             }
         } else {
             screenKeyPressed = false;
+        }
+        
+        // Key O - Toggle Door Open/Close
+        if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
+            if (!doorKeyPressed) {
+                g_classroom->toggleDoor();
+                doorKeyPressed = true;
+            }
+        } else {
+            doorKeyPressed = false;
         }
     }
     
