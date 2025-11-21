@@ -33,6 +33,7 @@ Classroom* g_classroom = nullptr;
 // Key press tracking to avoid multiple toggles
 bool keyPressed[6] = {false, false, false, false, false, false};
 bool screenKeyPressed = false;  // For projector screen toggle (P key)
+bool maximizeKeyPressed = false;  // For window maximize toggle (M key)
 
 // Function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -128,8 +129,8 @@ int main()
         for(int i = 0; i < 4; i++) {
             std::string lightBase = "lights[" + std::to_string(i) + "]";
             lightingShader.setVec3(lightBase + ".position", lightPositions[i]);
-            lightingShader.setVec3(lightBase + ".ambient", 0.16f * lightColor);
-            lightingShader.setVec3(lightBase + ".diffuse", 0.20f * lightColor);
+            lightingShader.setVec3(lightBase + ".ambient", 0.17f * lightColor);
+            lightingShader.setVec3(lightBase + ".diffuse", 0.05f * lightColor);
             lightingShader.setVec3(lightBase + ".specular", 0.35f * lightColor);
         }
 
@@ -264,6 +265,23 @@ void processInput(GLFWwindow *window)
         } else {
             screenKeyPressed = false;
         }
+    }
+    
+    // Key M - Toggle Window Maximize
+    if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) {
+        if (!maximizeKeyPressed) {
+            // Check if window is currently maximized
+            if (glfwGetWindowAttrib(window, GLFW_MAXIMIZED)) {
+                // Restore window
+                glfwRestoreWindow(window);
+            } else {
+                // Maximize window
+                glfwMaximizeWindow(window);
+            }
+            maximizeKeyPressed = true;
+        }
+    } else {
+        maximizeKeyPressed = false;
     }
 }
 

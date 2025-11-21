@@ -1,5 +1,6 @@
 #include "../include/classroom.h"
 #include <iostream>
+#include <cmath>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../include/stb_image.h"
@@ -101,7 +102,7 @@ void Classroom::initializeGeometry()
     // Load textures
     benchTextureID = loadTexture("textures/bench_texture_v3.jpg");
     ceilingTileTextureID = loadTexture("textures/tile_texture.jpeg");
-    podiumTextureID = loadTexture("textures/podium_texture_v1.jpg");
+    podiumTextureID = loadTexture("textures/podium_texture_v2.jpg");
 }
 
 void Classroom::generateFloor()
@@ -1332,7 +1333,7 @@ void Classroom::render(Shader& shader)
         shader.setVec3("material.diffuse", glm::vec3(0.2f, 0.3f, 0.4f));
         shader.setVec3("material.specular", glm::vec3(0.6f, 0.7f, 0.8f));
         shader.setFloat("material.shininess", 32.0f);
-        shader.setFloat("alpha", 0.3f);  // 30% opacity
+        shader.setFloat("alpha", 0.7f);  // 70% opacity
         
         glBindVertexArray(windowsVAO);
         glDrawArrays(GL_TRIANGLES, 0, windowVertices.size() / 8);
@@ -1644,7 +1645,7 @@ void Classroom::renderDoor(Shader& shader)
     shader.setFloat("material.shininess", 32.0f);
     
     float doorZ = -ROOM_LENGTH/2 + 1.5f; // Near the front wall (1.5m from front)
-    float doorOpenAngle = 45.0f; // Door is open at 45 degrees
+    float doorOpenAngle = 0.0f; // Door is open at 45 degrees
     
     // Position door at the hinge point (left edge of door frame)
     glm::mat4 model = glm::mat4(1.0f);
@@ -1667,6 +1668,118 @@ void Classroom::renderDoor(Shader& shader)
     // Reset model matrix
     model = glm::mat4(1.0f);
     shader.setMat4("model", model);
+}
+
+// Helper function to generate cylinder vertices
+std::vector<float> generateCylinderVertices(float radius, float height, int segments)
+{
+    std::vector<float> vertices;
+    
+    // Generate vertices for the cylinder sides
+    for (int i = 0; i <= segments; ++i)
+    {
+        float theta = 2.0f * M_PI * float(i) / float(segments);
+        float nextTheta = 2.0f * M_PI * float(i + 1) / float(segments);
+        
+        float x1 = radius * cos(theta);
+        float z1 = radius * sin(theta);
+        float x2 = radius * cos(nextTheta);
+        float z2 = radius * sin(nextTheta);
+        
+        // Normal for the side (pointing outward)
+        float nx1 = cos(theta);
+        float nz1 = sin(theta);
+        float nx2 = cos(nextTheta);
+        float nz2 = sin(nextTheta);
+        
+        // Triangle 1 (bottom to top)
+        // Bottom vertex 1
+        vertices.push_back(x1); vertices.push_back(-height/2); vertices.push_back(z1);
+        vertices.push_back(nx1); vertices.push_back(0.0f); vertices.push_back(nz1);
+        vertices.push_back(float(i) / segments); vertices.push_back(0.0f);
+        
+        // Top vertex 1
+        vertices.push_back(x1); vertices.push_back(height/2); vertices.push_back(z1);
+        vertices.push_back(nx1); vertices.push_back(0.0f); vertices.push_back(nz1);
+        vertices.push_back(float(i) / segments); vertices.push_back(1.0f);
+        
+        // Bottom vertex 2
+        vertices.push_back(x2); vertices.push_back(-height/2); vertices.push_back(z2);
+        vertices.push_back(nx2); vertices.push_back(0.0f); vertices.push_back(nz2);
+        vertices.push_back(float(i + 1) / segments); vertices.push_back(0.0f);
+        
+        // Triangle 2
+        // Top vertex 1
+        vertices.push_back(x1); vertices.push_back(height/2); vertices.push_back(z1);
+        vertices.push_back(nx1); vertices.push_back(0.0f); vertices.push_back(nz1);
+        vertices.push_back(float(i) / segments); vertices.push_back(1.0f);
+        
+        // Top vertex 2
+        vertices.push_back(x2); vertices.push_back(height/2); vertices.push_back(z2);
+        vertices.push_back(nx2); vertices.push_back(0.0f); vertices.push_back(nz2);
+        vertices.push_back(float(i + 1) / segments); vertices.push_back(1.0f);
+        
+        // Bottom vertex 2
+        vertices.push_back(x2); vertices.push_back(-height/2); vertices.push_back(z2);
+        vertices.push_back(nx2); vertices.push_back(0.0f); vertices.push_back(nz2);
+        vertices.push_back(float(i + 1) / segments); vertices.push_back(0.0f);
+    }
+    
+    // Generate top cap
+    for (int i = 0; i < segments; ++i)
+    {
+        float theta = 2.0f * M_PI * float(i) / float(segments);
+        float nextTheta = 2.0f * M_PI * float(i + 1) / float(segments);
+        
+        float x1 = radius * cos(theta);
+        float z1 = radius * sin(theta);
+        float x2 = radius * cos(nextTheta);
+        float z2 = radius * sin(nextTheta);
+        
+        // Center of top cap
+        vertices.push_back(0.0f); vertices.push_back(height/2); vertices.push_back(0.0f);
+        vertices.push_back(0.0f); vertices.push_back(1.0f); vertices.push_back(0.0f);
+        vertices.push_back(0.5f); vertices.push_back(0.5f);
+        
+        // First point on circle
+        vertices.push_back(x1); vertices.push_back(height/2); vertices.push_back(z1);
+        vertices.push_back(0.0f); vertices.push_back(1.0f); vertices.push_back(0.0f);
+        vertices.push_back(0.5f + 0.5f * cos(theta)); vertices.push_back(0.5f + 0.5f * sin(theta));
+        
+        // Second point on circle
+        vertices.push_back(x2); vertices.push_back(height/2); vertices.push_back(z2);
+        vertices.push_back(0.0f); vertices.push_back(1.0f); vertices.push_back(0.0f);
+        vertices.push_back(0.5f + 0.5f * cos(nextTheta)); vertices.push_back(0.5f + 0.5f * sin(nextTheta));
+    }
+    
+    // Generate bottom cap
+    for (int i = 0; i < segments; ++i)
+    {
+        float theta = 2.0f * M_PI * float(i) / float(segments);
+        float nextTheta = 2.0f * M_PI * float(i + 1) / float(segments);
+        
+        float x1 = radius * cos(theta);
+        float z1 = radius * sin(theta);
+        float x2 = radius * cos(nextTheta);
+        float z2 = radius * sin(nextTheta);
+        
+        // Center of bottom cap
+        vertices.push_back(0.0f); vertices.push_back(-height/2); vertices.push_back(0.0f);
+        vertices.push_back(0.0f); vertices.push_back(-1.0f); vertices.push_back(0.0f);
+        vertices.push_back(0.5f); vertices.push_back(0.5f);
+        
+        // Second point on circle (reversed for correct winding)
+        vertices.push_back(x2); vertices.push_back(-height/2); vertices.push_back(z2);
+        vertices.push_back(0.0f); vertices.push_back(-1.0f); vertices.push_back(0.0f);
+        vertices.push_back(0.5f + 0.5f * cos(nextTheta)); vertices.push_back(0.5f + 0.5f * sin(nextTheta));
+        
+        // First point on circle
+        vertices.push_back(x1); vertices.push_back(-height/2); vertices.push_back(z1);
+        vertices.push_back(0.0f); vertices.push_back(-1.0f); vertices.push_back(0.0f);
+        vertices.push_back(0.5f + 0.5f * cos(theta)); vertices.push_back(0.5f + 0.5f * sin(theta));
+    }
+    
+    return vertices;
 }
 
 void Classroom::renderProjector(Shader& shader)
@@ -1825,7 +1938,7 @@ void Classroom::renderProjector(Shader& shader)
             glDrawArrays(GL_TRIANGLES, 0, 12);
         }
         
-        // 3. Draw bottom rod (weight bar)
+        // 3. Draw bottom rod (weight bar) - as a solid cylinder
         shader.setVec3("material.ambient", glm::vec3(0.15f, 0.15f, 0.15f));
         shader.setVec3("material.diffuse", glm::vec3(0.2f, 0.2f, 0.2f));
         shader.setVec3("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
@@ -1833,14 +1946,35 @@ void Classroom::renderProjector(Shader& shader)
         
         float rodRadius = 0.025f;
         float rodLength = totalScreenWidth * 1.02f;
-        float rodY = screenTopY - currentTotalScreenHeight - rodRadius;
+        float rodY = screenTopY - currentTotalScreenHeight - rodRadius + 0.003f;
+        
+        // Generate cylinder vertices for the rod
+        std::vector<float> cylinderVerts = generateCylinderVertices(1.0f, 1.0f, 32); // 32 segments for smoothness
+        
+        unsigned int rodVAO, rodVBO;
+        glGenVertexArrays(1, &rodVAO);
+        glGenBuffers(1, &rodVBO);
+        
+        glBindVertexArray(rodVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, rodVBO);
+        glBufferData(GL_ARRAY_BUFFER, cylinderVerts.size() * sizeof(float), cylinderVerts.data(), GL_STATIC_DRAW);
+        
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+        glEnableVertexAttribArray(2);
         
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(screenCenterX, rodY, screenZ + 0.02f));
-        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        model = glm::scale(model, glm::vec3(rodRadius * 2, rodLength, rodRadius * 2));
+        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotate to horizontal
+        model = glm::scale(model, glm::vec3(rodRadius, rodLength, rodRadius));
         shader.setMat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 12);
+        glDrawArrays(GL_TRIANGLES, 0, cylinderVerts.size() / 8);
+        
+        glDeleteVertexArrays(1, &rodVAO);
+        glDeleteBuffers(1, &rodVBO);
         
         glDeleteVertexArrays(1, &screenVAO);
         glDeleteBuffers(1, &screenVBO);
