@@ -27,6 +27,13 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+// Global pointer to classroom for input handling
+Classroom* g_classroom = nullptr;
+
+// Key press tracking to avoid multiple toggles
+bool keyPressed[6] = {false, false, false, false, false, false};
+bool screenKeyPressed = false;  // For projector screen toggle (P key)
+
 // Function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -40,6 +47,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 4);  // Enable 4x multisampling anti-aliasing
 
     // glfw window creation
     GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "CL-3 Classroom (South Campus)", NULL, NULL);
@@ -66,6 +74,11 @@ int main()
 
     // configure global opengl state
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_MULTISAMPLE);  // Enable multisampling for smooth edges
+    glEnable(GL_LINE_SMOOTH);  // Enable line smoothing
+    glEnable(GL_POLYGON_SMOOTH);  // Enable polygon smoothing
+    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);  // Best quality line smoothing
+    glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);  // Best quality polygon smoothing
 
     // build and compile our shader program
     Shader lightingShader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
@@ -74,6 +87,9 @@ int main()
     // Initialize classroom
     Classroom classroom;
     classroom.initializeGeometry();
+    
+    // Set global pointer for input handling
+    g_classroom = &classroom;
 
     // render loop
     while (!glfwWindowShouldClose(window))
@@ -87,26 +103,42 @@ int main()
         processInput(window);
 
         // render
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  // Black background
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // be sure to activate shader when setting uniforms/drawing objects
         lightingShader.use();
         lightingShader.setVec3("viewPos", camera.Position);
 
-        // light properties
+        // Set up 4 corner ceiling lights
         glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 0.9f);
-        glm::vec3 lightPos = glm::vec3(0.0f, 3.0f, 0.0f);
-        lightingShader.setVec3("light.position", lightPos);
-        lightingShader.setVec3("light.ambient", 0.3f * lightColor);
-        lightingShader.setVec3("light.diffuse", 0.8f * lightColor);
-        lightingShader.setVec3("light.specular", 1.0f * lightColor);
+        
+        // Light positions at four corners of ceiling (room is 12m x 8m)
+        glm::vec3 lightPositions[4] = {
+            glm::vec3(-4.2f, 3.0f, -2.2f),         // Front-left corner
+            glm::vec3(4.2f, 3.0f, -2.2f),          // Front-right corner
+            glm::vec3(-4.2f, 3.0f, 2.2f),          // Back-left corner
+            glm::vec3(4.2f, 3.0f, 2.2f)            // Back-right corner
+        };
+        
+        // Set number of active lights
+        lightingShader.setInt("numActiveLights", 4);
+        
+        // Configure each corner light
+        for(int i = 0; i < 4; i++) {
+            std::string lightBase = "lights[" + std::to_string(i) + "]";
+            lightingShader.setVec3(lightBase + ".position", lightPositions[i]);
+            lightingShader.setVec3(lightBase + ".ambient", 0.16f * lightColor);
+            lightingShader.setVec3(lightBase + ".diffuse", 0.20f * lightColor);
+            lightingShader.setVec3(lightBase + ".specular", 0.35f * lightColor);
+        }
 
         // Default material properties (will be overridden in classroom.render)
         lightingShader.setVec3("material.ambient", glm::vec3(0.5f));
         lightingShader.setVec3("material.diffuse", glm::vec3(0.7f));
         lightingShader.setVec3("material.specular", glm::vec3(0.3f));
         lightingShader.setFloat("material.shininess", 32.0f);
+        lightingShader.setFloat("alpha", 1.0f);  // Default to fully opaque
 
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
@@ -124,6 +156,9 @@ int main()
         // Update and render the fan
         classroom.updateFan(deltaTime);
         classroom.renderFan(lightingShader);
+        
+        // Update projector screen animation
+        classroom.updateProjectorScreen(deltaTime);
 
         // render light sources
         lightCubeShader.use();
@@ -157,6 +192,79 @@ void processInput(GLFWwindow *window)
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
+    
+    // Fan control keys (1-6)
+    if (g_classroom != nullptr) {
+        // Key 1 - Fan 0
+        if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+            if (!keyPressed[0]) {
+                g_classroom->toggleFan(0);
+                keyPressed[0] = true;
+            }
+        } else {
+            keyPressed[0] = false;
+        }
+        
+        // Key 2 - Fan 1
+        if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+            if (!keyPressed[1]) {
+                g_classroom->toggleFan(1);
+                keyPressed[1] = true;
+            }
+        } else {
+            keyPressed[1] = false;
+        }
+        
+        // Key 3 - Fan 2
+        if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+            if (!keyPressed[2]) {
+                g_classroom->toggleFan(2);
+                keyPressed[2] = true;
+            }
+        } else {
+            keyPressed[2] = false;
+        }
+        
+        // Key 4 - Fan 3
+        if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
+            if (!keyPressed[3]) {
+                g_classroom->toggleFan(3);
+                keyPressed[3] = true;
+            }
+        } else {
+            keyPressed[3] = false;
+        }
+        
+        // Key 5 - Fan 4
+        if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) {
+            if (!keyPressed[4]) {
+                g_classroom->toggleFan(4);
+                keyPressed[4] = true;
+            }
+        } else {
+            keyPressed[4] = false;
+        }
+        
+        // Key 6 - Fan 5
+        if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) {
+            if (!keyPressed[5]) {
+                g_classroom->toggleFan(5);
+                keyPressed[5] = true;
+            }
+        } else {
+            keyPressed[5] = false;
+        }
+        
+        // Key P - Toggle Projector Screen
+        if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+            if (!screenKeyPressed) {
+                g_classroom->toggleProjectorScreen();
+                screenKeyPressed = true;
+            }
+        } else {
+            screenKeyPressed = false;
+        }
+    }
 }
 
 // glfw: whenever the window size changed this callback function executes

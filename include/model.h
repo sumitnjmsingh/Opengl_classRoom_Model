@@ -66,8 +66,14 @@ public:
             }
             else if (prefix == "f")  // Face
             {
-                std::string vertex1, vertex2, vertex3;
-                iss >> vertex1 >> vertex2 >> vertex3;
+                std::vector<std::string> faceVertices;
+                std::string vertexStr;
+                
+                // Read all vertices in the face (could be 3 for triangle or 4 for quad)
+                while (iss >> vertexStr)
+                {
+                    faceVertices.push_back(vertexStr);
+                }
                 
                 // Parse face indices (format: v/vt/vn or v//vn or v/vt or v)
                 auto parseVertex = [&](const std::string& vertexStr) {
@@ -106,9 +112,37 @@ public:
                     if (vnIdx > 0) normalIndices.push_back(vnIdx);
                 };
                 
-                parseVertex(vertex1);
-                parseVertex(vertex2);
-                parseVertex(vertex3);
+                // Handle both triangles and quads
+                if (faceVertices.size() == 3)
+                {
+                    // Triangle - add as is
+                    parseVertex(faceVertices[0]);
+                    parseVertex(faceVertices[1]);
+                    parseVertex(faceVertices[2]);
+                }
+                else if (faceVertices.size() == 4)
+                {
+                    // Quad - split into two triangles
+                    // Triangle 1: v0, v1, v2
+                    parseVertex(faceVertices[0]);
+                    parseVertex(faceVertices[1]);
+                    parseVertex(faceVertices[2]);
+                    
+                    // Triangle 2: v0, v2, v3
+                    parseVertex(faceVertices[0]);
+                    parseVertex(faceVertices[2]);
+                    parseVertex(faceVertices[3]);
+                }
+                else if (faceVertices.size() > 4)
+                {
+                    // Polygon with more than 4 vertices - triangulate using fan triangulation
+                    for (size_t i = 1; i < faceVertices.size() - 1; i++)
+                    {
+                        parseVertex(faceVertices[0]);
+                        parseVertex(faceVertices[i]);
+                        parseVertex(faceVertices[i + 1]);
+                    }
+                }
             }
         }
         
